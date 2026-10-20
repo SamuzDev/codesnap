@@ -78,8 +78,8 @@ All options go under `lsp.zedsnap-ls.initialization_options` in
   "lsp": {
     "zedsnap-ls": {
       "initialization_options": {
-        "theme": "base16-ocean.dark",
-        "background": "#667eea,#764ba2",
+        "theme": "dracula",
+        "background": "#282a36,#1a1b26",
         "padding": 48,
         "fontSize": 14,
         "lineNumbers": false,
@@ -99,8 +99,8 @@ All options go under `lsp.zedsnap-ls.initialization_options` in
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `theme` | `base16-ocean.dark` | syntect theme used for highlighting (run `zedsnap-ls --themes` to list them). |
-| `background` | `#667eea,#764ba2` | Backdrop: one color, a comma-separated list (diagonal gradient) or `transparent`. |
+| `theme` | `dracula` | syntect theme used for highlighting (run `zedsnap-ls --themes` to list them). |
+| `background` | `#282a36,#1a1b26` | Backdrop: one color, a comma-separated list (diagonal gradient) or `transparent`. |
 | `padding` | `48` | Margin around the window, in pixels. |
 | `fontSize` | `14` | Code font size, in pixels. |
 | `lineNumbers` | `false` | Show the line-number gutter. |

@@ -290,7 +290,9 @@ mod tests {
         assert!(svg.contains("#ff5f57"));
         assert!(svg.contains(">fn<"));
         assert!(svg.contains(">main<"));
-        assert!(svg.contains("() {}"));
+        // Dracula colors parens and braces separately; both parts must render.
+        assert!(svg.contains("() "));
+        assert!(svg.contains("{}"));
     }
 
     #[test]

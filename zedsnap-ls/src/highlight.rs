@@ -1,6 +1,7 @@
 //! Syntax highlighting with syntect (the syntax definitions and themes ship
 //! inside the crate itself, so it works offline and without system deps).
 
+use std::io::Cursor;
 use std::sync::OnceLock;
 
 use syntect::easy::HighlightLines;
@@ -13,14 +14,24 @@ use crate::config::DEFAULT_THEME;
 /// One highlighted line: pairs of (style, text).
 pub type StyledLine = Vec<(Style, String)>;
 
+/// Bundled extra themes (beyond syntect's defaults).
+const DRACULA_TMTHEME: &[u8] = include_bytes!("../assets/themes/Dracula.tmTheme");
+
 pub fn syntax_set() -> &'static SyntaxSet {
     static SET: OnceLock<SyntaxSet> = OnceLock::new();
     SET.get_or_init(SyntaxSet::load_defaults_newlines)
 }
 
+/// syntect defaults plus the themes bundled in `assets/themes/`.
 fn theme_set() -> &'static ThemeSet {
     static SET: OnceLock<ThemeSet> = OnceLock::new();
-    SET.get_or_init(ThemeSet::load_defaults)
+    SET.get_or_init(|| {
+        let mut set = ThemeSet::load_defaults();
+        if let Ok(theme) = ThemeSet::load_from_reader(&mut Cursor::new(DRACULA_TMTHEME)) {
+            set.themes.insert("dracula".to_string(), theme);
+        }
+        set
+    })
 }
 
 pub fn available_themes() -> Vec<String> {
@@ -35,7 +46,7 @@ pub fn theme(name: &str) -> &'static Theme {
         .themes
         .get(name)
         .or_else(|| themes.themes.get(DEFAULT_THEME))
-        .unwrap_or_else(|| themes.themes.values().next().expect("syntect sin temas"))
+        .unwrap_or_else(|| themes.themes.values().next().expect("syntect loaded no themes"))
 }
 
 /// Highlights `code` line by line.
@@ -193,7 +204,7 @@ mod tests {
             theme,
         );
         assert_eq!(lines.len(), 1);
-        assert!(lines[0].len() > 1, "debería producir varios tramos");
+        assert!(lines[0].len() > 1, "should produce multiple spans");
         let joined: String = lines[0].iter().map(|(_, text)| text.as_str()).collect();
         assert_eq!(joined, "fn main() { println!(\"hola\"); }");
     }

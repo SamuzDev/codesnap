@@ -3,7 +3,7 @@
 
 use serde::Deserialize;
 
-pub const DEFAULT_THEME: &str = "base16-ocean.dark";
+pub const DEFAULT_THEME: &str = "dracula";
 
 fn default_padding() -> f32 {
     48.0
@@ -24,7 +24,7 @@ fn default_tab_width() -> usize {
     4
 }
 fn default_background() -> String {
-    "#667eea,#764ba2".to_string()
+    "#282a36,#1a1b26".to_string()
 }
 
 #[derive(Debug, Clone, Deserialize)]
