@@ -17,9 +17,6 @@ fn default_corner_radius() -> f32 {
 fn default_scale() -> f32 {
     2.0
 }
-fn default_jpeg_quality() -> u8 {
-    90
-}
 fn default_tab_width() -> usize {
     4
 }
@@ -49,14 +46,10 @@ pub struct Config {
     pub shadow: bool,
     /// Window corner radius.
     pub corner_radius: f32,
-    /// PNG scale (2 = retina-sharp).
+    /// Image scale (2 = retina-sharp).
     pub scale: f32,
-    /// JPEG quality (50–100).
-    pub jpeg_quality: u8,
     /// Columns a tab character occupies.
     pub tab_width: usize,
-    /// Output folder (`null` = project root; `~/` is expanded).
-    pub output_dir: Option<String>,
 }
 
 impl Default for Config {
@@ -72,9 +65,7 @@ impl Default for Config {
             shadow: true,
             corner_radius: default_corner_radius(),
             scale: default_scale(),
-            jpeg_quality: default_jpeg_quality(),
             tab_width: default_tab_width(),
-            output_dir: None,
         }
     }
 }

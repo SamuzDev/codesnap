@@ -1,30 +1,27 @@
 //! The LSP side: Zed asks for code actions on the current selection, ZedSnap
-//! offers "📸 snapshot as PNG/SVG" and runs them with
-//! `workspace/executeCommand`.
+//! offers "📸 copy as PNG/SVG" and runs them with `workspace/executeCommand`.
 //!
 //! This is the only way a Zed extension can learn the editor selection:
 //! extensions cannot read the buffer, but a language server receives the
 //! range of the code-action request.
 
 use std::collections::HashMap;
-use std::path::{Path, PathBuf};
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use lsp_server::{Connection, ErrorCode, Message, Notification, Request, RequestId, Response};
 use lsp_types::{
     CodeActionParams, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
     DidOpenTextDocumentParams, ExecuteCommandParams, InitializeParams, MessageType,
-    Range as LspRange, ShowDocumentParams, ShowMessageParams, Url,
+    Range as LspRange, ShowMessageParams, Url,
 };
 use serde::Deserialize;
 use serde_json::{json, Value};
 
 use crate::config::Config;
-use crate::snapshot::{self, OutputFormat, SnapRequest};
+use crate::snapshot::{self, SnapRequest};
 
 pub const COMMAND_PNG: &str = "zedsnap.png";
 pub const COMMAND_SVG: &str = "zedsnap.svg";
-pub const COMMAND_JPG: &str = "zedsnap.jpg";
 
 struct Document {
     text: String,
@@ -43,22 +40,19 @@ pub fn run() -> Result<()> {
     let capabilities = json!({
         "textDocumentSync": 1,
         "codeActionProvider": true,
-        "executeCommandProvider": { "commands": [COMMAND_PNG, COMMAND_SVG, COMMAND_JPG] },
+        "executeCommandProvider": { "commands": [COMMAND_PNG, COMMAND_SVG] },
     });
 
     let initialize_params = connection.initialize(capabilities)?;
     let initialize_params: InitializeParams = serde_json::from_value(initialize_params)?;
 
     let config = Config::from_value(initialize_params.initialization_options.clone());
-    let root = workspace_root(&initialize_params);
 
     let result = {
         let mut server = Server {
             connection: &connection,
             documents: HashMap::new(),
             config,
-            root,
-            next_request_id: 1_000_000,
         };
         server.main_loop()
     };
@@ -69,27 +63,10 @@ pub fn run() -> Result<()> {
     result
 }
 
-#[allow(deprecated)] // `root_uri` is deprecated LSP-wise but Zed still sends it.
-fn workspace_root(params: &InitializeParams) -> Option<PathBuf> {
-    params
-        .workspace_folders
-        .as_ref()
-        .and_then(|folders| folders.first())
-        .and_then(|folder| folder.uri.to_file_path().ok())
-        .or_else(|| {
-            params
-                .root_uri
-                .as_ref()
-                .and_then(|uri| uri.to_file_path().ok())
-        })
-}
-
 struct Server<'a> {
     connection: &'a Connection,
     documents: HashMap<Url, Document>,
     config: Config,
-    root: Option<PathBuf>,
-    next_request_id: i32,
 }
 
 impl Server<'_> {
@@ -112,7 +89,7 @@ impl Server<'_> {
                     }
                     self.handle_notification(notification);
                 }
-                // Responses to our own requests (showDocument).
+                // Responses to our own requests (none currently).
                 Message::Response(_) => {}
             }
         }
@@ -127,12 +104,11 @@ impl Server<'_> {
             },
             "workspace/executeCommand" => match serde_json::from_value(request.params) {
                 Ok(params) => match self.execute_command(&params) {
-                    Ok(path) => {
+                    Ok(()) => {
                         self.show_message(
                             MessageType::INFO,
-                            format!("📸 ZedSnap: image saved to {}", path.display()),
+                            "📸 ZedSnap: copied to clipboard".to_string(),
                         );
-                        self.show_document(&path);
                         Response::new_ok(request.id, Value::Null)
                     }
                     Err(err) => {
@@ -217,37 +193,28 @@ impl Server<'_> {
         let arguments = json!([{ "uri": params.text_document.uri, "range": params.range }]);
         json!([
             {
-                "title": format!("📸 ZedSnap: snapshot of {target} as PNG"),
+                "title": format!("📸 ZedSnap: copy {target} as PNG"),
                 "command": {
-                    "title": "Snapshot as PNG",
+                    "title": "Copy as PNG",
                     "command": COMMAND_PNG,
                     "arguments": arguments,
                 },
             },
             {
-                "title": format!("📸 ZedSnap: snapshot of {target} as SVG"),
+                "title": format!("📸 ZedSnap: copy {target} as SVG"),
                 "command": {
-                    "title": "Snapshot as SVG",
+                    "title": "Copy as SVG",
                     "command": COMMAND_SVG,
-                    "arguments": arguments,
-                },
-            },
-            {
-                "title": format!("📸 ZedSnap: snapshot of {target} as JPG"),
-                "command": {
-                    "title": "Snapshot as JPG",
-                    "command": COMMAND_JPG,
                     "arguments": arguments,
                 },
             },
         ])
     }
 
-    fn execute_command(&mut self, params: &ExecuteCommandParams) -> Result<PathBuf> {
-        let format = match params.command.as_str() {
-            COMMAND_PNG => OutputFormat::Png,
-            COMMAND_SVG => OutputFormat::Svg,
-            COMMAND_JPG => OutputFormat::Jpg,
+    fn execute_command(&mut self, params: &ExecuteCommandParams) -> Result<()> {
+        let as_svg = match params.command.as_str() {
+            COMMAND_PNG => false,
+            COMMAND_SVG => true,
             other => anyhow::bail!("unknown command: {other}"),
         };
         let argument = params
@@ -267,13 +234,6 @@ impl Server<'_> {
             .as_ref()
             .and_then(|path| path.extension())
             .map(|ext| ext.to_string_lossy().into_owned());
-        let stem = snapshot::output_stem(file_name.as_deref());
-
-        let default_dir = self.root.clone().or_else(|| {
-            file_path
-                .as_ref()
-                .and_then(|path| path.parent().map(Path::to_path_buf))
-        });
 
         let request = SnapRequest {
             text: &text,
@@ -281,11 +241,9 @@ impl Server<'_> {
             extension: extension.as_deref(),
             file_name,
             lines: line_span(&range),
-            format,
         };
-        let bytes = snapshot::render(&request, &self.config)?;
-        let dir = snapshot::output_dir(&self.config, default_dir.as_deref());
-        snapshot::save(&bytes, &dir, &stem, format)
+        let svg = snapshot::render_svg(&request, &self.config)?;
+        copy_to_clipboard(&svg, as_svg, self.config.scale)
     }
 
     fn document_text(&self, uri: &Url) -> Result<(String, Option<String>)> {
@@ -309,26 +267,31 @@ impl Server<'_> {
             .send(Message::Notification(notification))
             .ok();
     }
+}
 
-    /// Asks the client to open the snapshot (Zed shows it in its image
-    /// viewer). Harmless if the client ignores it.
-    fn show_document(&mut self, path: &Path) {
-        let Ok(uri) = Url::from_file_path(path) else {
-            return;
-        };
-        self.next_request_id += 1;
-        let request = Request::new(
-            RequestId::from(self.next_request_id),
-            "window/showDocument".to_string(),
-            ShowDocumentParams {
-                uri,
-                external: Some(false),
-                take_focus: Some(true),
-                selection: None,
-            },
-        );
-        self.connection.sender.send(Message::Request(request)).ok();
+/// Copies the snapshot to the system clipboard: the SVG source as text, or
+/// the rasterized image as RGBA pixels.
+fn copy_to_clipboard(svg: &str, as_svg: bool, scale: f32) -> Result<()> {
+    let mut clipboard =
+        arboard::Clipboard::new().context("could not open the system clipboard")?;
+
+    if as_svg {
+        clipboard
+            .set_text(svg.to_string())
+            .context("could not copy the SVG")?;
+        return Ok(());
     }
+
+    let pixmap = snapshot::rasterize(svg, scale)?;
+    let (width, height, bytes) = snapshot::clipboard_image_owned(&pixmap);
+    clipboard
+        .set_image(arboard::ImageData {
+            width,
+            height,
+            bytes: std::borrow::Cow::Owned(bytes),
+        })
+        .context("could not copy the image")?;
+    Ok(())
 }
 
 /// Converts an LSP range into an inclusive line span (0-based) expanded to

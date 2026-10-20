@@ -2,7 +2,7 @@
 //! without opening Zed.
 
 use zedsnap_ls::config::Config;
-use zedsnap_ls::snapshot::{self, OutputFormat, SnapRequest};
+use zedsnap_ls::snapshot::{self, SnapRequest};
 
 const SAMPLE: &str = r#"//! ZedSnap example.
 use std::collections::HashMap;
@@ -53,11 +53,11 @@ fn writes_a_preview_png() {
         extension: Some("rs"),
         file_name: Some("counter.rs".to_string()),
         lines: None,
-        format: OutputFormat::Png,
     };
-    let bytes = snapshot::render(&request, &config).expect("should render");
-    assert_eq!(&bytes[..8], b"\x89PNG\r\n\x1a\n");
+    let svg = snapshot::render_svg(&request, &config).expect("should render");
+    let pixmap = snapshot::rasterize(&svg, config.scale).expect("should rasterize");
+    let png = pixmap.encode_png().expect("should encode PNG");
 
     let path = concat!(env!("CARGO_MANIFEST_DIR"), "/target/zedsnap-preview.png");
-    std::fs::write(path, &bytes).expect("could not write the preview");
+    std::fs::write(path, &png).expect("could not write the preview");
 }

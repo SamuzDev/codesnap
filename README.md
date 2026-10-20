@@ -2,8 +2,8 @@
 
 📸 Polaroid-style screenshots of your code for [Zed](https://zed.dev) — select
 some code (or nothing for the whole file), hit `Ctrl+.` and pick
-**ZedSnap: snapshot of selection as PNG**. ZedSnap writes a retina-sharp
-image (PNG, SVG or JPG) and opens it in Zed's image viewer.
+**ZedSnap: copy selection as PNG**. ZedSnap copies a retina-sharp image (PNG)
+or the SVG source straight to your clipboard, ready to paste.
 
 Inspired by Polacode and CodeSnap.
 
@@ -12,14 +12,12 @@ Inspired by Polacode and CodeSnap.
 1. Select the code you want to capture (leave the cursor alone for the whole
    file).
 2. Open the code-action menu: `Ctrl+.` (`Cmd+.` on macOS).
-3. Choose `📸 ZedSnap: snapshot of selection as PNG` (or `... as SVG` /
-   `... as JPG`).
+3. Choose `📸 ZedSnap: copy selection as PNG` (or `... as SVG`).
 
-The image is saved as `zedsnap-<file>-<timestamp>.<ext>` in the project root
-and opened automatically.
+The snapshot lands in your clipboard — paste it into any app.
 
-**Formats:** PNG (lossless, best quality), SVG (vector, scales forever) and
-JPG (lossy, smallest files for sharing).
+**Formats:** PNG (raster image, paste anywhere) and SVG (vector source, for
+design tools and the web).
 
 ## Install
 
@@ -88,9 +86,7 @@ All options go under `lsp.zedsnap-ls.initialization_options` in
         "shadow": true,
         "cornerRadius": 12,
         "scale": 2,
-        "jpegQuality": 90,
-        "tabWidth": 4,
-        "outputDir": null
+        "tabWidth": 4
       }
     }
   }
@@ -108,10 +104,8 @@ All options go under `lsp.zedsnap-ls.initialization_options` in
 | `windowTitle` | file name | Title shown in the window's title bar. |
 | `shadow` | `true` | Drop shadow under the window. |
 | `cornerRadius` | `12` | Window corner radius. |
-| `scale` | `2` | PNG scale factor (2 = retina-sharp). |
-| `jpegQuality` | `90` | JPEG quality (50–100). |
+| `scale` | `2` | Image scale factor (2 = retina-sharp). |
 | `tabWidth` | `4` | Columns a tab character occupies. |
-| `outputDir` | project root | Output folder (`~/` is expanded). |
 
 ## Supported languages
 
@@ -132,8 +126,7 @@ request. So:
 2. When you ask for code actions, Zed sends your selection to `zedsnap-ls`.
 3. The server answers with the two ZedSnap actions; running one renders the
    SVG (highlighted with [syntect]), rasterizes it with [resvg] at 2x using
-   the embedded JetBrains Mono, saves it and asks Zed to open it via
-   `window/showDocument`.
+   the embedded JetBrains Mono, and copies it to the system clipboard.
 
 [syntect]: https://crates.io/crates/syntect
 [resvg]: https://crates.io/crates/resvg
