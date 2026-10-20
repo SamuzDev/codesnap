@@ -1,0 +1,10 @@
+# Build artifacts
+target/
+*.wasm
+
+# Outputs generated while testing
+zedsnap-*.png
+zedsnap-*.svg
+
+# Editor/OS noise
+.DS_Store

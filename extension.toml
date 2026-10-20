@@ -1,0 +1,106 @@
+id = "zedsnap"
+name = "ZedSnap"
+version = "0.1.0"
+schema_version = 1
+authors = ["samuzdev <deyverabanto@gmail.com>"]
+description = "📸 Generates images (PNG/SVG) of your selected code or the whole file, Polacode/CodeSnap style."
+repository = "https://github.com/SamuzDev/zedsnap"
+
+[language_servers.zedsnap-ls]
+name = "ZedSnap"
+languages = [
+  "Astro",
+  "C",
+  "C#",
+  "C++",
+  "CSS",
+  "Clojure",
+  "Dart",
+  "Diff",
+  "Dockerfile",
+  "Elixir",
+  "Elm",
+  "Erlang",
+  "Gleam",
+  "Go",
+  "GraphQL",
+  "HTML",
+  "Haskell",
+  "Java",
+  "JavaScript",
+  "JSON",
+  "JSONC",
+  "Julia",
+  "Kotlin",
+  "Lua",
+  "Markdown",
+  "Nix",
+  "OCaml",
+  "PHP",
+  "Prisma",
+  "Python",
+  "R",
+  "Ruby",
+  "Rust",
+  "SCSS",
+  "SQL",
+  "Scala",
+  "Shell Script",
+  "Svelte",
+  "Swift",
+  "TOML",
+  "TSX",
+  "Terraform",
+  "TypeScript",
+  "Vue.js",
+  "YAML",
+  "Zig",
+]
+
+[language_servers.zedsnap-ls.language_ids]
+"Astro" = "astro"
+"C" = "c"
+"C#" = "csharp"
+"C++" = "cpp"
+"CSS" = "css"
+"Clojure" = "clojure"
+"Dart" = "dart"
+"Diff" = "diff"
+"Dockerfile" = "dockerfile"
+"Elixir" = "elixir"
+"Elm" = "elm"
+"Erlang" = "erlang"
+"Gleam" = "gleam"
+"Go" = "go"
+"GraphQL" = "graphql"
+"HTML" = "html"
+"Haskell" = "haskell"
+"Java" = "java"
+"JavaScript" = "javascript"
+"JSON" = "json"
+"JSONC" = "jsonc"
+"Julia" = "julia"
+"Kotlin" = "kotlin"
+"Lua" = "lua"
+"Markdown" = "markdown"
+"Nix" = "nix"
+"OCaml" = "ocaml"
+"PHP" = "php"
+"Prisma" = "prisma"
+"Python" = "python"
+"R" = "r"
+"Ruby" = "ruby"
+"Rust" = "rust"
+"SCSS" = "scss"
+"SQL" = "sql"
+"Scala" = "scala"
+"Shell Script" = "shellscript"
+"Svelte" = "svelte"
+"Swift" = "swift"
+"TOML" = "toml"
+"TSX" = "typescriptreact"
+"Terraform" = "terraform"
+"TypeScript" = "typescript"
+"Vue.js" = "vue"
+"YAML" = "yaml"
+"Zig" = "zig"
