@@ -1,18 +1,19 @@
 //! The LSP side: Zed asks for code actions on the current selection, ZedSnap
-//! offers "📸 copy as PNG/SVG" and runs them with `workspace/executeCommand`.
+//! offers "copy/save as PNG/SVG" and runs them with `workspace/executeCommand`.
 //!
 //! This is the only way a Zed extension can learn the editor selection:
 //! extensions cannot read the buffer, but a language server receives the
 //! range of the code-action request.
 
 use std::collections::HashMap;
+use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
 use lsp_server::{Connection, ErrorCode, Message, Notification, Request, RequestId, Response};
 use lsp_types::{
     CodeActionParams, DidChangeTextDocumentParams, DidCloseTextDocumentParams,
     DidOpenTextDocumentParams, ExecuteCommandParams, InitializeParams, MessageType,
-    Range as LspRange, ShowMessageParams, Url,
+    Range as LspRange, ShowDocumentParams, ShowMessageParams, Url,
 };
 use serde::Deserialize;
 use serde_json::{json, Value};
@@ -20,8 +21,10 @@ use serde_json::{json, Value};
 use crate::config::Config;
 use crate::snapshot::{self, SnapRequest};
 
-pub const COMMAND_PNG: &str = "zedsnap.png";
-pub const COMMAND_SVG: &str = "zedsnap.svg";
+pub const COMMAND_COPY_PNG: &str = "zedsnap.png";
+pub const COMMAND_COPY_SVG: &str = "zedsnap.svg";
+pub const COMMAND_SAVE_PNG: &str = "zedsnap.savePng";
+pub const COMMAND_SAVE_SVG: &str = "zedsnap.saveSvg";
 
 struct Document {
     text: String,
@@ -34,25 +37,38 @@ struct SnapArguments {
     range: LspRange,
 }
 
+/// What `executeCommand` did, so the caller can toast accordingly.
+enum Outcome {
+    Copied,
+    Saved(PathBuf),
+    /// The save dialog was dismissed without picking a file.
+    Cancelled,
+}
+
 pub fn run() -> Result<()> {
     let (connection, io_threads) = Connection::stdio();
 
     let capabilities = json!({
         "textDocumentSync": 1,
         "codeActionProvider": true,
-        "executeCommandProvider": { "commands": [COMMAND_PNG, COMMAND_SVG] },
+        "executeCommandProvider": {
+            "commands": [COMMAND_COPY_PNG, COMMAND_COPY_SVG, COMMAND_SAVE_PNG, COMMAND_SAVE_SVG]
+        },
     });
 
     let initialize_params = connection.initialize(capabilities)?;
     let initialize_params: InitializeParams = serde_json::from_value(initialize_params)?;
 
     let config = Config::from_value(initialize_params.initialization_options.clone());
+    let root = workspace_root(&initialize_params);
 
     let result = {
         let mut server = Server {
             connection: &connection,
             documents: HashMap::new(),
             config,
+            root,
+            next_request_id: 1_000_000,
         };
         server.main_loop()
     };
@@ -63,10 +79,27 @@ pub fn run() -> Result<()> {
     result
 }
 
+#[allow(deprecated)] // `root_uri` is deprecated LSP-wise but Zed still sends it.
+fn workspace_root(params: &InitializeParams) -> Option<PathBuf> {
+    params
+        .workspace_folders
+        .as_ref()
+        .and_then(|folders| folders.first())
+        .and_then(|folder| folder.uri.to_file_path().ok())
+        .or_else(|| {
+            params
+                .root_uri
+                .as_ref()
+                .and_then(|uri| uri.to_file_path().ok())
+        })
+}
+
 struct Server<'a> {
     connection: &'a Connection,
     documents: HashMap<Url, Document>,
     config: Config,
+    root: Option<PathBuf>,
+    next_request_id: i32,
 }
 
 impl Server<'_> {
@@ -89,7 +122,7 @@ impl Server<'_> {
                     }
                     self.handle_notification(notification);
                 }
-                // Responses to our own requests (none currently).
+                // Responses to our own requests (showDocument).
                 Message::Response(_) => {}
             }
         }
@@ -104,11 +137,23 @@ impl Server<'_> {
             },
             "workspace/executeCommand" => match serde_json::from_value(request.params) {
                 Ok(params) => match self.execute_command(&params) {
-                    Ok(()) => {
+                    Ok(Outcome::Copied) => {
                         self.show_message(
                             MessageType::INFO,
                             "📸 ZedSnap: copied to clipboard".to_string(),
                         );
+                        Response::new_ok(request.id, Value::Null)
+                    }
+                    Ok(Outcome::Saved(path)) => {
+                        self.show_message(
+                            MessageType::INFO,
+                            format!("📸 ZedSnap: saved to {}", path.display()),
+                        );
+                        self.show_document(&path);
+                        Response::new_ok(request.id, Value::Null)
+                    }
+                    Ok(Outcome::Cancelled) => {
+                        // Not an error: the user closed the dialog on purpose.
                         Response::new_ok(request.id, Value::Null)
                     }
                     Err(err) => {
@@ -196,7 +241,7 @@ impl Server<'_> {
                 "title": format!("📸 ZedSnap: copy {target} as PNG"),
                 "command": {
                     "title": "Copy as PNG",
-                    "command": COMMAND_PNG,
+                    "command": COMMAND_COPY_PNG,
                     "arguments": arguments,
                 },
             },
@@ -204,17 +249,35 @@ impl Server<'_> {
                 "title": format!("📸 ZedSnap: copy {target} as SVG"),
                 "command": {
                     "title": "Copy as SVG",
-                    "command": COMMAND_SVG,
+                    "command": COMMAND_COPY_SVG,
+                    "arguments": arguments,
+                },
+            },
+            {
+                "title": format!("📸 ZedSnap: save {target} as PNG…"),
+                "command": {
+                    "title": "Save as PNG…",
+                    "command": COMMAND_SAVE_PNG,
+                    "arguments": arguments,
+                },
+            },
+            {
+                "title": format!("📸 ZedSnap: save {target} as SVG…"),
+                "command": {
+                    "title": "Save as SVG…",
+                    "command": COMMAND_SAVE_SVG,
                     "arguments": arguments,
                 },
             },
         ])
     }
 
-    fn execute_command(&mut self, params: &ExecuteCommandParams) -> Result<()> {
-        let as_svg = match params.command.as_str() {
-            COMMAND_PNG => false,
-            COMMAND_SVG => true,
+    fn execute_command(&mut self, params: &ExecuteCommandParams) -> Result<Outcome> {
+        let (as_svg, save) = match params.command.as_str() {
+            COMMAND_COPY_PNG => (false, false),
+            COMMAND_COPY_SVG => (true, false),
+            COMMAND_SAVE_PNG => (false, true),
+            COMMAND_SAVE_SVG => (true, true),
             other => anyhow::bail!("unknown command: {other}"),
         };
         let argument = params
@@ -243,7 +306,28 @@ impl Server<'_> {
             lines: line_span(&range),
         };
         let svg = snapshot::render_svg(&request, &self.config)?;
-        copy_to_clipboard(&svg, as_svg, self.config.scale)
+
+        if !save {
+            copy_to_clipboard(&svg, as_svg, self.config.scale)?;
+            return Ok(Outcome::Copied);
+        }
+
+        let stem = file_path
+            .as_ref()
+            .and_then(|path| path.file_stem())
+            .map(|stem| stem.to_string_lossy().into_owned())
+            .unwrap_or_else(|| "snippet".to_string());
+        let suggested = format!("{stem}.{}", if as_svg { "svg" } else { "png" });
+        let default_dir = self.root.clone().or_else(|| {
+            file_path
+                .as_ref()
+                .and_then(|path| path.parent().map(Path::to_path_buf))
+        });
+
+        match save_with_dialog(&svg, as_svg, &suggested, default_dir.as_deref(), self.config.scale)? {
+            Some(path) => Ok(Outcome::Saved(path)),
+            None => Ok(Outcome::Cancelled),
+        }
     }
 
     fn document_text(&self, uri: &Url) -> Result<(String, Option<String>)> {
@@ -266,6 +350,26 @@ impl Server<'_> {
             .sender
             .send(Message::Notification(notification))
             .ok();
+    }
+
+    /// Asks the client to open the snapshot (Zed shows it in its image
+    /// viewer). Harmless if the client ignores it.
+    fn show_document(&mut self, path: &Path) {
+        let Ok(uri) = Url::from_file_path(path) else {
+            return;
+        };
+        self.next_request_id += 1;
+        let request = Request::new(
+            RequestId::from(self.next_request_id),
+            "window/showDocument".to_string(),
+            ShowDocumentParams {
+                uri,
+                external: Some(false),
+                take_focus: Some(true),
+                selection: None,
+            },
+        );
+        self.connection.sender.send(Message::Request(request)).ok();
     }
 }
 
@@ -292,6 +396,35 @@ fn copy_to_clipboard(svg: &str, as_svg: bool, scale: f32) -> Result<()> {
         })
         .context("could not copy the image")?;
     Ok(())
+}
+
+/// Opens a native "save file" dialog and writes the snapshot there.
+/// Returns `None` when the dialog was cancelled.
+fn save_with_dialog(
+    svg: &str,
+    as_svg: bool,
+    suggested_name: &str,
+    default_dir: Option<&Path>,
+    scale: f32,
+) -> Result<Option<PathBuf>> {
+    let mut dialog = rfd::FileDialog::new().set_file_name(suggested_name);
+    if let Some(dir) = default_dir {
+        dialog = dialog.set_directory(dir);
+    }
+    let Some(path) = dialog.save_file() else {
+        return Ok(None);
+    };
+
+    if as_svg {
+        std::fs::write(&path, svg).with_context(|| format!("could not write {}", path.display()))?;
+    } else {
+        let pixmap = snapshot::rasterize(svg, scale)?;
+        let png = pixmap
+            .encode_png()
+            .context("could not encode the PNG")?;
+        std::fs::write(&path, png).with_context(|| format!("could not write {}", path.display()))?;
+    }
+    Ok(Some(path))
 }
 
 /// Converts an LSP range into an inclusive line span (0-based) expanded to

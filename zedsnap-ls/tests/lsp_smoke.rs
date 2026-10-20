@@ -169,8 +169,8 @@ fn initialize(client: &mut Client, root: &std::path::Path, config: Value) {
     assert!(
         result["capabilities"]["executeCommandProvider"]["commands"]
             .as_array()
-            .is_some_and(|commands| commands.len() == 2),
-        "the server must advertise both snapshot commands"
+            .is_some_and(|commands| commands.len() == 4),
+        "the server must advertise all four snapshot commands"
     );
     client.notify("initialized", json!({}));
 }
@@ -208,10 +208,14 @@ fn copies_a_selection_as_png() {
         }),
     );
     let titles = titles(&actions);
-    assert_eq!(titles.len(), 2, "{titles:?}");
+    assert_eq!(titles.len(), 4, "{titles:?}");
     assert!(
         titles.iter().any(|t| t.contains("selection") && t.contains("PNG")),
         "missing the selection action: {titles:?}"
+    );
+    assert!(
+        titles.iter().any(|t| t.contains("save") && t.contains("PNG")),
+        "missing the save action: {titles:?}"
     );
 
     // Run the snapshot. On a machine with no display the clipboard call fails

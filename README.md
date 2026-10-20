@@ -2,8 +2,9 @@
 
 📸 Polaroid-style screenshots of your code for [Zed](https://zed.dev) — select
 some code (or nothing for the whole file), hit `Ctrl+.` and pick
-**ZedSnap: copy selection as PNG**. ZedSnap copies a retina-sharp image (PNG)
-or the SVG source straight to your clipboard, ready to paste.
+**ZedSnap: copy selection as PNG** (or **save selection as PNG…**). ZedSnap
+copies a retina-sharp image (PNG) or the SVG source to your clipboard, or opens
+a save dialog so you choose where to store it.
 
 Inspired by Polacode and CodeSnap.
 
@@ -12,12 +13,17 @@ Inspired by Polacode and CodeSnap.
 1. Select the code you want to capture (leave the cursor alone for the whole
    file).
 2. Open the code-action menu: `Ctrl+.` (`Cmd+.` on macOS).
-3. Choose `📸 ZedSnap: copy selection as PNG` (or `... as SVG`).
+3. Choose one of the four actions:
 
-The snapshot lands in your clipboard — paste it into any app.
+   | Action | What it does |
+   | --- | --- |
+   | `copy selection as PNG` | Raster image → clipboard |
+   | `copy selection as SVG` | Vector source → clipboard |
+   | `save selection as PNG…` | Native save dialog → `.png` file |
+   | `save selection as SVG…` | Native save dialog → `.svg` file |
 
-**Formats:** PNG (raster image, paste anywhere) and SVG (vector source, for
-design tools and the web).
+**Clipboard on Linux:** copying uses the X11 clipboard. On pure-Wayland setups
+without XWayland it may fail — use the **save** actions instead.
 
 ## Install
 
@@ -124,12 +130,14 @@ request. So:
 1. The WASM extension registers `zedsnap-ls` for every supported language and
    tells Zed how to launch the binary.
 2. When you ask for code actions, Zed sends your selection to `zedsnap-ls`.
-3. The server answers with the two ZedSnap actions; running one renders the
+3. The server answers with the four ZedSnap actions; running one renders the
    SVG (highlighted with [syntect]), rasterizes it with [resvg] at 2x using
-   the embedded JetBrains Mono, and copies it to the system clipboard.
+   the embedded JetBrains Mono, and either copies it to the system clipboard
+   or opens a native save dialog ([rfd]).
 
 [syntect]: https://crates.io/crates/syntect
 [resvg]: https://crates.io/crates/resvg
+[rfd]: https://crates.io/crates/rfd
 
 ## Development
 

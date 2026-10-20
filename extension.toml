@@ -1,9 +1,9 @@
 id = "zedsnap"
 name = "ZedSnap"
-version = "0.1.0"
+version = "0.1.1"
 schema_version = 1
 authors = ["samuzdev <deyverabanto@gmail.com>"]
-description = "📸 Copies images (PNG/SVG) of your selected code or the whole file to the clipboard, Polacode/CodeSnap style."
+description = "📸 Copies (or saves) images (PNG/SVG) of your selected code or the whole file, Polacode/CodeSnap style."
 repository = "https://github.com/SamuzDev/zedsnap"
 
 [language_servers.zedsnap-ls]
