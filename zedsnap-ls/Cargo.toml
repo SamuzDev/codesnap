@@ -1,6 +1,6 @@
 [package]
 name = "zedsnap-ls"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 license = "MIT"
 publish = false
@@ -8,6 +8,7 @@ description = "Language server that generates code screenshots — the engine be
 
 [dependencies]
 anyhow = "1"
+jpeg-encoder = "0.7"
 lsp-server = "0.10"
 lsp-types = "0.95"
 serde = { version = "1", features = ["derive"] }

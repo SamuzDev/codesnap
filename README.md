@@ -2,8 +2,8 @@
 
 📸 Polaroid-style screenshots of your code for [Zed](https://zed.dev) — select
 some code (or nothing for the whole file), hit `Ctrl+.` and pick
-**ZedSnap: snapshot of selection as PNG**. ZedSnap writes a retina-sharp image
-and opens it in Zed's image viewer.
+**ZedSnap: snapshot of selection as PNG**. ZedSnap writes a retina-sharp
+image (PNG, SVG or JPG) and opens it in Zed's image viewer.
 
 Inspired by Polacode and CodeSnap.
 
@@ -12,10 +12,14 @@ Inspired by Polacode and CodeSnap.
 1. Select the code you want to capture (leave the cursor alone for the whole
    file).
 2. Open the code-action menu: `Ctrl+.` (`Cmd+.` on macOS).
-3. Choose `📸 ZedSnap: snapshot of selection as PNG` (or `... as SVG`).
+3. Choose `📸 ZedSnap: snapshot of selection as PNG` (or `... as SVG` /
+   `... as JPG`).
 
-The image is saved as `zedsnap-<file>-<timestamp>.png` in the project root and
-opened automatically.
+The image is saved as `zedsnap-<file>-<timestamp>.<ext>` in the project root
+and opened automatically.
+
+**Formats:** PNG (lossless, best quality), SVG (vector, scales forever) and
+JPG (lossy, smallest files for sharing).
 
 ## Install
 
@@ -23,6 +27,21 @@ ZedSnap has two parts:
 
 - The **extension** (WebAssembly) that registers the language server.
 - The **`zedsnap-ls` binary** that actually renders the images.
+
+### Prebuilt binaries (Linux & Windows)
+
+The extension downloads the right `zedsnap-ls` binary from the
+[GitHub releases](https://github.com/SamuzDev/zedsnap/releases)
+automatically:
+
+| Asset | Platform |
+| --- | --- |
+| `zedsnap-ls-x86_64-linux.tar.gz` | Linux x86_64 (static, any distro) |
+| `zedsnap-ls-aarch64-linux.tar.gz` | Linux aarch64 |
+| `zedsnap-ls-x86_64-windows.zip` | Windows x86_64 |
+
+macOS: build from source (`cargo install --path zedsnap-ls`) until macOS
+binaries are published.
 
 ### From source (development)
 
@@ -69,6 +88,7 @@ All options go under `lsp.zedsnap-ls.initialization_options` in
         "shadow": true,
         "cornerRadius": 12,
         "scale": 2,
+        "jpegQuality": 90,
         "tabWidth": 4,
         "outputDir": null
       }
@@ -89,6 +109,7 @@ All options go under `lsp.zedsnap-ls.initialization_options` in
 | `shadow` | `true` | Drop shadow under the window. |
 | `cornerRadius` | `12` | Window corner radius. |
 | `scale` | `2` | PNG scale factor (2 = retina-sharp). |
+| `jpegQuality` | `90` | JPEG quality (50–100). |
 | `tabWidth` | `4` | Columns a tab character occupies. |
 | `outputDir` | project root | Output folder (`~/` is expanded). |
 

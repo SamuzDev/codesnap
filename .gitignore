@@ -1,6 +1,7 @@
 # Build artifacts
 target/
 *.wasm
+dist/
 
 # Outputs generated while testing
 zedsnap-*.png

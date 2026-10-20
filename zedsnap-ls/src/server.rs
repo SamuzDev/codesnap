@@ -24,6 +24,7 @@ use crate::snapshot::{self, OutputFormat, SnapRequest};
 
 pub const COMMAND_PNG: &str = "zedsnap.png";
 pub const COMMAND_SVG: &str = "zedsnap.svg";
+pub const COMMAND_JPG: &str = "zedsnap.jpg";
 
 struct Document {
     text: String,
@@ -42,7 +43,7 @@ pub fn run() -> Result<()> {
     let capabilities = json!({
         "textDocumentSync": 1,
         "codeActionProvider": true,
-        "executeCommandProvider": { "commands": [COMMAND_PNG, COMMAND_SVG] },
+        "executeCommandProvider": { "commands": [COMMAND_PNG, COMMAND_SVG, COMMAND_JPG] },
     });
 
     let initialize_params = connection.initialize(capabilities)?;
@@ -231,6 +232,14 @@ impl Server<'_> {
                     "arguments": arguments,
                 },
             },
+            {
+                "title": format!("📸 ZedSnap: snapshot of {target} as JPG"),
+                "command": {
+                    "title": "Snapshot as JPG",
+                    "command": COMMAND_JPG,
+                    "arguments": arguments,
+                },
+            },
         ])
     }
 
@@ -238,6 +247,7 @@ impl Server<'_> {
         let format = match params.command.as_str() {
             COMMAND_PNG => OutputFormat::Png,
             COMMAND_SVG => OutputFormat::Svg,
+            COMMAND_JPG => OutputFormat::Jpg,
             other => anyhow::bail!("unknown command: {other}"),
         };
         let argument = params

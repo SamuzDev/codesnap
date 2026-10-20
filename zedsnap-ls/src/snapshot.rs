@@ -21,6 +21,7 @@ const FONT_ITALIC: &[u8] = include_bytes!("../assets/fonts/JetBrainsMono-Italic.
 pub enum OutputFormat {
     Png,
     Svg,
+    Jpg,
 }
 
 impl OutputFormat {
@@ -28,6 +29,7 @@ impl OutputFormat {
         match self {
             OutputFormat::Png => "png",
             OutputFormat::Svg => "svg",
+            OutputFormat::Jpg => "jpg",
         }
     }
 }
@@ -78,7 +80,8 @@ pub fn render(request: &SnapRequest, config: &Config) -> Result<Vec<u8>> {
 
     match request.format {
         OutputFormat::Svg => Ok(svg.into_bytes()),
-        OutputFormat::Png => rasterize(&svg, config.scale),
+        OutputFormat::Png => encode_png(&rasterize(&svg, config.scale)?),
+        OutputFormat::Jpg => encode_jpeg(&rasterize(&svg, config.scale)?, config.jpeg_quality),
     }
 }
 
@@ -118,8 +121,9 @@ pub fn save(
     Ok(path)
 }
 
-/// Rasterizes the SVG into a PNG with `resvg`, using only the embedded fonts.
-pub fn rasterize(svg: &str, scale: f32) -> Result<Vec<u8>> {
+/// Rasterizes the SVG into a pixmap with `resvg`, using only the embedded
+/// fonts. The result is encoded afterwards as PNG or JPEG.
+pub fn rasterize(svg: &str, scale: f32) -> Result<tiny_skia::Pixmap> {
     let scale = if scale.is_finite() && scale > 0.0 {
         scale.clamp(0.25, 8.0)
     } else {
@@ -151,7 +155,42 @@ pub fn rasterize(svg: &str, scale: f32) -> Result<Vec<u8>> {
         tiny_skia::Transform::from_scale(scale, scale),
         &mut pixmap.as_mut(),
     );
+    Ok(pixmap)
+}
+
+fn encode_png(pixmap: &tiny_skia::Pixmap) -> Result<Vec<u8>> {
     pixmap.encode_png().context("could not encode the PNG")
+}
+
+/// JPEG is lossy but much smaller — handy for sharing. JPEG has no alpha
+/// channel, so the image is composited over white.
+fn encode_jpeg(pixmap: &tiny_skia::Pixmap, quality: u8) -> Result<Vec<u8>> {
+    let quality = quality.clamp(50, 100);
+    let (width, height) = (pixmap.width(), pixmap.height());
+    if width > u16::MAX as u32 || height > u16::MAX as u32 {
+        bail!("image too large for JPEG ({width}x{height}): lower the scale");
+    }
+
+    let data = pixmap.data();
+    let mut rgb = Vec::with_capacity(data.len() / 4 * 3);
+    for pixel in data.chunks_exact(4) {
+        // Premultiplied channels over white: out = premultiplied + (255 - a).
+        let keep = 255 - pixel[3];
+        rgb.push(pixel[0].saturating_add(keep));
+        rgb.push(pixel[1].saturating_add(keep));
+        rgb.push(pixel[2].saturating_add(keep));
+    }
+
+    let mut out = Vec::new();
+    jpeg_encoder::Encoder::new(&mut out, quality)
+        .encode(
+            &rgb,
+            width as u16,
+            height as u16,
+            jpeg_encoder::ColorType::Rgb,
+        )
+        .map_err(|err| anyhow::anyhow!("could not encode the JPEG: {err}"))?;
+    Ok(out)
 }
 
 /// Returns the requested line span (0-based, inclusive).
@@ -304,6 +343,21 @@ mod tests {
         let svg = render(&request, &config).unwrap();
         let svg = String::from_utf8(svg).unwrap();
         assert!(svg.starts_with("<svg"));
+    }
+
+    #[test]
+    fn renders_a_jpg() {
+        let config = Config::default();
+        let request = SnapRequest {
+            text: "fn main() {}\n",
+            language_id: Some("rust"),
+            extension: Some("rs"),
+            file_name: Some("main.rs".to_string()),
+            lines: None,
+            format: OutputFormat::Jpg,
+        };
+        let jpg = render(&request, &config).unwrap();
+        assert_eq!(&jpg[..2], &[0xFF, 0xD8], "JPEG must start with the SOI marker");
     }
 
     #[test]

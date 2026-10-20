@@ -170,8 +170,8 @@ fn initialize(client: &mut Client, root: &std::path::Path, config: Value) {
     assert!(
         result["capabilities"]["executeCommandProvider"]["commands"]
             .as_array()
-            .is_some_and(|commands| commands.len() == 2),
-        "the server must advertise both snapshot commands"
+            .is_some_and(|commands| commands.len() == 3),
+        "the server must advertise all three snapshot commands"
     );
     client.notify("initialized", json!({}));
 }
@@ -213,10 +213,14 @@ fn snapshots_a_selection_to_png() {
         }),
     );
     let titles = titles(&actions);
-    assert_eq!(titles.len(), 2, "{titles:?}");
+    assert_eq!(titles.len(), 3, "{titles:?}");
     assert!(
         titles.iter().any(|t| t.contains("selection") && t.contains("PNG")),
         "missing the selection action: {titles:?}"
+    );
+    assert!(
+        titles.iter().any(|t| t.contains("JPG")),
+        "missing the JPG action: {titles:?}"
     );
 
     // Run the snapshot.
