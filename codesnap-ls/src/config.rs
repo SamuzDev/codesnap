@@ -1,5 +1,5 @@
 //! Appearance options, received via `initializationOptions` (the
-//! `lsp.zedsnap-ls.initialization_options` block in `settings.json`).
+//! `lsp.codesnap-ls.initialization_options` block in `settings.json`).
 
 use serde::Deserialize;
 

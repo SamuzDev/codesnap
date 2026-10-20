@@ -1,13 +1,13 @@
-id = "zedsnap"
-name = "ZedSnap"
+id = "codesnap"
+name = "CodeSnap"
 version = "0.1.1"
 schema_version = 1
 authors = ["samuzdev <deyverabanto@gmail.com>"]
-description = "📸 Copies (or saves) images (PNG/SVG) of your selected code or the whole file, Polacode/CodeSnap style."
-repository = "https://github.com/SamuzDev/zedsnap"
+description = "📸 Copies (or saves) images (PNG/SVG) of your selected code or the whole file, Polacode style."
+repository = "https://github.com/SamuzDev/codesnap"
 
-[language_servers.zedsnap-ls]
-name = "ZedSnap"
+[language_servers.codesnap-ls]
+name = "CodeSnap"
 languages = [
   "Astro",
   "C",
@@ -57,7 +57,7 @@ languages = [
   "Zig",
 ]
 
-[language_servers.zedsnap-ls.language_ids]
+[language_servers.codesnap-ls.language_ids]
 "Astro" = "astro"
 "C" = "c"
 "C#" = "csharp"

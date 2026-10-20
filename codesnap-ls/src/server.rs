@@ -1,4 +1,4 @@
-//! The LSP side: Zed asks for code actions on the current selection, ZedSnap
+//! The LSP side: Zed asks for code actions on the current selection, CodeSnap
 //! offers "copy/save as PNG/SVG" and runs them with `workspace/executeCommand`.
 //!
 //! This is the only way a Zed extension can learn the editor selection:
@@ -21,10 +21,10 @@ use serde_json::{json, Value};
 use crate::config::Config;
 use crate::snapshot::{self, SnapRequest};
 
-pub const COMMAND_COPY_PNG: &str = "zedsnap.png";
-pub const COMMAND_COPY_SVG: &str = "zedsnap.svg";
-pub const COMMAND_SAVE_PNG: &str = "zedsnap.savePng";
-pub const COMMAND_SAVE_SVG: &str = "zedsnap.saveSvg";
+pub const COMMAND_COPY_PNG: &str = "codesnap.png";
+pub const COMMAND_COPY_SVG: &str = "codesnap.svg";
+pub const COMMAND_SAVE_PNG: &str = "codesnap.savePng";
+pub const COMMAND_SAVE_SVG: &str = "codesnap.saveSvg";
 
 struct Document {
     text: String,
@@ -140,14 +140,14 @@ impl Server<'_> {
                     Ok(Outcome::Copied) => {
                         self.show_message(
                             MessageType::INFO,
-                            "📸 ZedSnap: copied to clipboard".to_string(),
+                            "📸 CodeSnap: copied to clipboard".to_string(),
                         );
                         Response::new_ok(request.id, Value::Null)
                     }
                     Ok(Outcome::Saved(path)) => {
                         self.show_message(
                             MessageType::INFO,
-                            format!("📸 ZedSnap: saved to {}", path.display()),
+                            format!("📸 CodeSnap: saved to {}", path.display()),
                         );
                         self.show_document(&path);
                         Response::new_ok(request.id, Value::Null)
@@ -159,7 +159,7 @@ impl Server<'_> {
                     Err(err) => {
                         self.show_message(
                             MessageType::ERROR,
-                            format!("ZedSnap failed: {err:#}"),
+                            format!("CodeSnap failed: {err:#}"),
                         );
                         Response::new_err(
                             request.id,
@@ -238,7 +238,7 @@ impl Server<'_> {
         let arguments = json!([{ "uri": params.text_document.uri, "range": params.range }]);
         json!([
             {
-                "title": format!("📸 ZedSnap: copy {target} as PNG"),
+                "title": format!("📸 CodeSnap: copy {target} as PNG"),
                 "command": {
                     "title": "Copy as PNG",
                     "command": COMMAND_COPY_PNG,
@@ -246,7 +246,7 @@ impl Server<'_> {
                 },
             },
             {
-                "title": format!("📸 ZedSnap: copy {target} as SVG"),
+                "title": format!("📸 CodeSnap: copy {target} as SVG"),
                 "command": {
                     "title": "Copy as SVG",
                     "command": COMMAND_COPY_SVG,
@@ -254,7 +254,7 @@ impl Server<'_> {
                 },
             },
             {
-                "title": format!("📸 ZedSnap: save {target} as PNG…"),
+                "title": format!("📸 CodeSnap: save {target} as PNG…"),
                 "command": {
                     "title": "Save as PNG…",
                     "command": COMMAND_SAVE_PNG,
@@ -262,7 +262,7 @@ impl Server<'_> {
                 },
             },
             {
-                "title": format!("📸 ZedSnap: save {target} as SVG…"),
+                "title": format!("📸 CodeSnap: save {target} as SVG…"),
                 "command": {
                     "title": "Save as SVG…",
                     "command": COMMAND_SAVE_SVG,

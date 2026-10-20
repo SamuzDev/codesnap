@@ -1,4 +1,4 @@
-//! Full LSP session against the real `zedsnap-ls` binary:
+//! Full LSP session against the real `codesnap-ls` binary:
 //! initialize → didOpen → code actions → executeCommand → clipboard copy.
 
 use std::io::{BufRead, BufReader, Read, Write};
@@ -26,12 +26,12 @@ struct Client {
 
 impl Client {
     fn start() -> Self {
-        let mut child = Command::new(env!("CARGO_BIN_EXE_zedsnap-ls"))
+        let mut child = Command::new(env!("CARGO_BIN_EXE_codesnap-ls"))
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
             .spawn()
-            .expect("could not spawn zedsnap-ls");
+            .expect("could not spawn codesnap-ls");
         let stdout = child.stdout.take().expect("stdout captured");
         let (tx, rx) = mpsc::channel();
         thread::spawn(move || read_messages(stdout, tx));
@@ -146,7 +146,7 @@ fn titles(actions: &Value) -> Vec<String> {
 }
 
 fn temp_root(name: &str) -> std::path::PathBuf {
-    let root = std::env::temp_dir().join(format!("zedsnap-test-{}-{name}", std::process::id()));
+    let root = std::env::temp_dir().join(format!("codesnap-test-{}-{name}", std::process::id()));
     std::fs::create_dir_all(&root).unwrap();
     root
 }
@@ -223,7 +223,7 @@ fn copies_a_selection_as_png() {
     let (result, others) = client.request(
         "workspace/executeCommand",
         json!({
-            "command": "zedsnap.png",
+            "command": "codesnap.png",
             "arguments": [{ "uri": uri, "range": selection }],
         }),
     );
@@ -289,7 +289,7 @@ fn copies_the_whole_file_as_svg() {
     let (result, others) = client.request(
         "workspace/executeCommand",
         json!({
-            "command": "zedsnap.svg",
+            "command": "codesnap.svg",
             "arguments": [{ "uri": uri, "range": cursor }],
         }),
     );

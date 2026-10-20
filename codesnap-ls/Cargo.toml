@@ -1,10 +1,10 @@
 [package]
-name = "zedsnap-ls"
+name = "codesnap-ls"
 version = "0.1.1"
 edition = "2021"
 license = "MIT"
 publish = false
-description = "Language server that copies or saves code screenshots — the engine behind the ZedSnap extension for Zed."
+description = "Language server that copies or saves code screenshots — the engine behind the CodeSnap extension for Zed."
 
 [dependencies]
 anyhow = "1"

@@ -1,14 +1,14 @@
-//! ZedSnap — 📸 polaroid shots of your code in Zed.
+//! CodeSnap — 📸 polaroid shots of your code in Zed.
 //!
 //! This is the WebAssembly side of the extension. Zed compiles it to
-//! `wasm32-wasip2` and asks it how to launch the `zedsnap-ls` language
+//! `wasm32-wasip2` and asks it how to launch the `codesnap-ls` language
 //! server, which is what actually generates the images (Zed extensions cannot
 //! read the editor selection, but a language server receives the range of
 //! every code-action request).
 //!
 //! Binary resolution order:
-//!   1. `lsp.zedsnap-ls.binary.path` in `settings.json`
-//!   2. `zedsnap-ls` on the `$PATH` (e.g. `cargo install --path zedsnap-ls`)
+//!   1. `lsp.codesnap-ls.binary.path` in `settings.json`
+//!   2. `codesnap-ls` on the `$PATH` (e.g. `cargo install --path codesnap-ls`)
 //!   3. A previously downloaded binary (cached per version)
 //!   4. A pre-built binary from the GitHub releases
 
@@ -16,15 +16,15 @@ use std::fs;
 use zed_extension_api::settings::LspSettings;
 use zed_extension_api::{self as zed, LanguageServerId, Result};
 
-/// GitHub repository that hosts the `zedsnap-ls` binaries.
-const GITHUB_REPO: &str = "SamuzDev/zedsnap";
-const SERVER_BINARY: &str = "zedsnap-ls";
+/// GitHub repository that hosts the `codesnap-ls` binaries.
+const GITHUB_REPO: &str = "SamuzDev/codesnap";
+const SERVER_BINARY: &str = "codesnap-ls";
 
-struct ZedSnapExtension {
+struct CodeSnapExtension {
     downloaded_binary_path: Option<String>,
 }
 
-impl ZedSnapExtension {
+impl CodeSnapExtension {
     fn language_server_binary_path(
         &mut self,
         language_server_id: &LanguageServerId,
@@ -65,7 +65,7 @@ impl ZedSnapExtension {
             format!(
                 "no release of {SERVER_BINARY} was found: {err}. \
                  Install it manually with \
-                 `cargo install --path zedsnap/zedsnap-ls` so it is on your $PATH."
+                 `cargo install --path codesnap/codesnap-ls` so it is on your $PATH."
             )
         })?;
 
@@ -143,7 +143,7 @@ impl ZedSnapExtension {
     }
 }
 
-impl zed::Extension for ZedSnapExtension {
+impl zed::Extension for CodeSnapExtension {
     fn new() -> Self {
         Self {
             downloaded_binary_path: None,
@@ -179,4 +179,4 @@ impl zed::Extension for ZedSnapExtension {
     }
 }
 
-zed::register_extension!(ZedSnapExtension);
+zed::register_extension!(CodeSnapExtension);
