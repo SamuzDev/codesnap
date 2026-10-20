@@ -130,5 +130,5 @@ opening Zed.
 
 ## License
 
-MIT. The embedded JetBrains Mono fonts are licensed under the SIL Open Font
-License 1.1 (see `zedsnap-ls/assets/fonts/OFL.txt`).
+[MIT](LICENSE). The embedded JetBrains Mono fonts are licensed under the SIL
+Open Font License 1.1 (see [`zedsnap-ls/assets/fonts/OFL.txt`](zedsnap-ls/assets/fonts/OFL.txt)).
