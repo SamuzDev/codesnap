@@ -98,7 +98,7 @@ pub fn rasterize(svg: &str, scale: f32) -> Result<tiny_skia::Pixmap> {
 /// Converts a premultiplied pixmap into straight-alpha RGBA for the clipboard.
 pub fn unpremultiply(pixmap: &tiny_skia::Pixmap) -> Vec<u8> {
     let mut data = pixmap.data().to_vec();
-    for pixel in data.chunks_exact_mut(4) {
+    for pixel in data.as_chunks_mut::<4>().0 {
         let alpha = pixel[3];
         if alpha == 255 || alpha == 0 {
             if alpha == 0 {

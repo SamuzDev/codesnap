@@ -1,10 +1,10 @@
-//! Writes `target/zedsnap-preview.png` so the final look can be reviewed
+//! Writes `target/codesnap-preview.png` so the final look can be reviewed
 //! without opening Zed.
 
-use zedsnap_ls::config::Config;
-use zedsnap_ls::snapshot::{self, SnapRequest};
+use codesnap_ls::config::Config;
+use codesnap_ls::snapshot::{self, SnapRequest};
 
-const SAMPLE: &str = r#"//! ZedSnap example.
+const SAMPLE: &str = r#"//! CodeSnap example.
 use std::collections::HashMap;
 
 /// Counts how many times each word appears.
@@ -33,7 +33,7 @@ impl Counter {
 
 fn main() {
     let mut counter = Counter::default();
-    let text = "hello world hello zedsnap";
+    let text = "hello world hello codesnap";
     println!("words: {}", counter.count(text));
     for (word, times) in counter.top(3) {
         println!("{word}: {times}");
@@ -58,6 +58,6 @@ fn writes_a_preview_png() {
     let pixmap = snapshot::rasterize(&svg, config.scale).expect("should rasterize");
     let png = pixmap.encode_png().expect("should encode PNG");
 
-    let path = concat!(env!("CARGO_MANIFEST_DIR"), "/target/zedsnap-preview.png");
+    let path = concat!(env!("CARGO_MANIFEST_DIR"), "/target/codesnap-preview.png");
     std::fs::write(path, &png).expect("could not write the preview");
 }

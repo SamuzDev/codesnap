@@ -171,6 +171,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "codesnap-ls"
+version = "0.1.1"
+dependencies = [
+ "anyhow",
+ "arboard",
+ "lsp-server",
+ "lsp-types",
+ "resvg",
+ "rfd",
+ "serde",
+ "serde_json",
+ "syntect",
+]
+
+[[package]]
 name = "color_quant"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1816,21 +1831,6 @@ dependencies = [
  "quote",
  "syn 3.0.9",
  "synstructure",
-]
-
-[[package]]
-name = "zedsnap-ls"
-version = "0.1.1"
-dependencies = [
- "anyhow",
- "arboard",
- "lsp-server",
- "lsp-types",
- "resvg",
- "rfd",
- "serde",
- "serde_json",
- "syntect",
 ]
 
 [[package]]

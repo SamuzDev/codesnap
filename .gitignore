@@ -4,8 +4,8 @@ target/
 dist/
 
 # Outputs generated while testing
-zedsnap-*.png
-zedsnap-*.svg
+codesnap-*.png
+codesnap-*.svg
 
 # Editor/OS noise
 .DS_Store
